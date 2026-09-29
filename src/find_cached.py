@@ -20,16 +20,22 @@ def find_model_path(model_name, gguf_in_repo="model.gguf"):
         The full path to the cached model, or None if not found
     """
 
-    cache_name = model_name.replace("/", "--").lower()
-    snapshots_dir = os.path.join(
-        CACHE_DIR, f"models--{cache_name}", "snapshots"
-    )
-
-    if os.path.exists(snapshots_dir):
-        snapshots = os.listdir(snapshots_dir)
-
-        if snapshots:
-            return os.path.join(snapshots_dir, snapshots[0], gguf_in_repo)
+    # Hugging Face cache dirs keep the repo's case, but match
+    # case-insensitively in case the cache was populated lowercased.
+    wanted = f"models--{model_name.replace('/', '--')}".lower()
+    if not os.path.isdir(CACHE_DIR):
+        return None
+    for entry in os.listdir(CACHE_DIR):
+        if entry.lower() != wanted:
+            continue
+        snapshots_dir = os.path.join(CACHE_DIR, entry, "snapshots")
+        if not os.path.isdir(snapshots_dir):
+            continue
+        # Prefer the snapshot that actually contains the requested file.
+        for snapshot in sorted(os.listdir(snapshots_dir)):
+            candidate = os.path.join(snapshots_dir, snapshot, gguf_in_repo)
+            if os.path.exists(candidate):
+                return candidate
 
     return None
 

@@ -1,3 +1,12 @@
+# GLM-5.3-Flash llama.cpp RunPod worker
+
+Fork of [eniewold/llama-cpp-runpod](https://github.com/eniewold/llama-cpp-runpod) (CC BY 4.0) whose image is built on
+[unsloth's `glm5next` llama.cpp branch](https://github.com/unslothai/llama.cpp/tree/glm5next/upstream) instead of mainline,
+because mainline llama.cpp cannot load GLM-5.3-Flash (`glm5next`) yet. See `.github/workflows/build-image.yml` for the pinned commit.
+Image: `ghcr.io/milosmosovsky/glm53-flash-runpod:latest`. Everything below is the upstream README.
+
+---
+
 [![Runpod](https://api.runpod.io/badge/eniewold/llama-cpp-runpod)](https://console.runpod.io/hub/listing/eniewold/llama-cpp-runpod)
 
 <p align="center">

@@ -1,7 +1,8 @@
-# Official llama.cpp server image. The digest pin is managed automatically by
-# .github/workflows/latest-llamacpp.yml, which follows the floating
-# server-cuda tag and cuts a release named after the llama.cpp build number.
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:1c568d229561bbd4577698f1f38d3ed9bf3f5ab343e04f7a508e11ef63f4ced1
+# Base llama.cpp server image. Mainline llama.cpp cannot load GLM-5.3-Flash
+# (glm5next) yet, so CI builds the server image from unsloth's glm5next branch
+# and passes it in here. Default kept pointing at mainline for local builds.
+ARG BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:1c568d229561bbd4577698f1f38d3ed9bf3f5ab343e04f7a508e11ef63f4ced1
+FROM ${BASE_IMAGE}
 
 ENV PYTHONUNBUFFERED=1
 
