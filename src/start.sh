@@ -46,7 +46,18 @@ if [ -n "$LLAMA_CACHED_MODEL" ]; then
         echo "start.sh: Using cached model: $CACHED_LLAMA_ARGS"
         unset LLAMA_ARG_HF_REPO LLAMA_ARG_HF_FILE LLAMA_ARG_MODEL LLAMA_HF_QUANT
     elif [ -n "$LLAMA_ARG_HF_REPO" ]; then
-        echo "start.sh: WARNING: cached model not found; falling back to downloading $LLAMA_ARG_HF_REPO."
+        # llama-server's built-in downloader stalls on Xet-backed multi-GB
+        # shards, so fetch with the hf CLI (native Xet, parallel) instead.
+        repo="${LLAMA_ARG_HF_REPO%%:*}"
+        include="$(dirname "$LLAMA_CACHED_GGUF_PATH")/*"
+        [ "$include" = "./*" ] && include="$LLAMA_CACHED_GGUF_PATH"
+        echo "start.sh: WARNING: cached model not found; downloading $repo ($include) with hf..."
+        start_ts=$(date +%s)
+        HF_XET_HIGH_PERFORMANCE=1 hf download "$repo" --include "$include" --local-dir /models \
+            || fail "hf download of $repo failed."
+        echo "start.sh: Download finished in $(( $(date +%s) - start_ts ))s."
+        CACHED_LLAMA_ARGS="-m /models/$LLAMA_CACHED_GGUF_PATH"
+        unset LLAMA_ARG_HF_REPO LLAMA_ARG_HF_FILE LLAMA_ARG_MODEL LLAMA_HF_QUANT
     else
         fail "Could not resolve cached model path. Check that LLAMA_CACHED_MODEL and LLAMA_CACHED_GGUF_PATH are correct and the model is fully cached."
     fi
