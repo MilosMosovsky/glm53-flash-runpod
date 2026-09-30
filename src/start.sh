@@ -10,9 +10,14 @@ set -e -o pipefail
 # llama-server reads by itself. This script only:
 #   - resolves the model path when RunPod model caching is used,
 #   - appends any extra arguments from LLAMA_SERVER_CMD_ARGS,
-#   - forces the server port to 3098 (CLI arguments override env vars).
+#   - forces the server port (CLI arguments override env vars): 3098 for
+#     queue endpoints, $PORT for load-balancer endpoints (WORKER_MODE=loadbalancer).
 
-PORT=3098
+if [ "$WORKER_MODE" = "loadbalancer" ]; then
+    PORT=${PORT:-8080}
+else
+    PORT=3098
+fi
 
 # Fatal configuration errors would exit within milliseconds, which is faster
 # than RunPod's log capture for serverless workers - the container log then
@@ -125,6 +130,14 @@ until curl -sf "http://127.0.0.1:${PORT}/health" > /dev/null 2>&1; do
     fi
     sleep 1
 done
+
+# Load-balancer endpoints route HTTP straight to llama-server (health check on
+# /health), so there is no queue handler; keep the container alive on the server.
+if [ "$WORKER_MODE" = "loadbalancer" ]; then
+    echo "start.sh: llama-server is up and serving load-balancer traffic on port $PORT."
+    wait "$LLAMA_SERVER_PID"
+    fail "llama-server exited."
+fi
 
 echo "start.sh: llama-server is up and running, delegating to the handler script."
 
