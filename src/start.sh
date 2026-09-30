@@ -36,6 +36,16 @@ cleanup() {
     exit 0
 }
 
+# Load-balancer mode: report "initializing" (204) on PORT_HEALTH from the start,
+# so the download and model load are not mistaken for an unhealthy worker.
+if [ "$WORKER_MODE" = "loadbalancer" ]; then
+    if [ -z "$PORT_HEALTH" ] || [ "$PORT_HEALTH" = "$PORT" ]; then
+        fail "Load-balancer mode needs PORT_HEALTH set to a port other than PORT ($PORT)."
+    fi
+    python -u ./lb_health.py "$PORT" "$PORT_HEALTH" &
+    echo "start.sh: Health shim serving on port $PORT_HEALTH (204 until llama-server is ready)."
+fi
+
 CACHED_LLAMA_ARGS=""
 
 # When RunPod model caching is used, load the model from the cache and ignore
