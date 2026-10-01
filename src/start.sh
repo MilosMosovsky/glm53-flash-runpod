@@ -66,10 +66,13 @@ if [ -n "$LLAMA_CACHED_MODEL" ]; then
         repo="${LLAMA_ARG_HF_REPO%%:*}"
         include="$(dirname "$LLAMA_CACHED_GGUF_PATH")/*"
         [ "$include" = "./*" ] && include="$LLAMA_CACHED_GGUF_PATH"
-        echo "start.sh: WARNING: cached model not found; downloading $repo ($include) with hf..."
+        # Pin LLAMA_HF_REVISION to a commit: a re-upload to the repo's main branch
+        # (e.g. renamed GGUF metadata) can break the llama.cpp build in this image.
+        revision="${LLAMA_HF_REVISION:-main}"
+        echo "start.sh: WARNING: cached model not found; downloading $repo@$revision ($include) with hf..."
         start_ts=$(date +%s)
-        HF_XET_HIGH_PERFORMANCE=1 hf download "$repo" --include "$include" --local-dir /models \
-            || fail "hf download of $repo failed."
+        HF_XET_HIGH_PERFORMANCE=1 hf download "$repo" --revision "$revision" --include "$include" --local-dir /models \
+            || fail "hf download of $repo@$revision failed."
         echo "start.sh: Download finished in $(( $(date +%s) - start_ts ))s."
         CACHED_LLAMA_ARGS="-m /models/$LLAMA_CACHED_GGUF_PATH"
         unset LLAMA_ARG_HF_REPO LLAMA_ARG_HF_FILE LLAMA_ARG_MODEL LLAMA_HF_QUANT
